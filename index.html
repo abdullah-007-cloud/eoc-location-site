@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Share Location</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
+    button { padding: 14px 18px; font-size: 16px; cursor: pointer; }
+    .status { margin-top: 15px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>Share Your Location</h2>
+  <p>Please tap the button below and allow location access.</p>
+
+  <button onclick="shareLocation()">Share Location</button>
+
+  <div class="status" id="status">Waiting...</div>
+
+  <script>
+    const API_BASE = "PUT-YOUR-RENDER-URL-HERE"; // example: https://eoc-location-api.onrender.com
+    const TOKEN = "incident123"; // you can change this per incident
+
+    function shareLocation() {
+      if (!navigator.geolocation) {
+        document.getElementById("status").innerText = "Location not supported.";
+        return;
+      }
+
+      document.getElementById("status").innerText = "Requesting location...";
+
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          fetch(API_BASE + "/api/location", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              token: TOKEN,
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+              time: new Date().toISOString()
+            })
+          })
+          .then(() => {
+            document.getElementById("status").innerText = "Location sent successfully ✅";
+          })
+          .catch(() => {
+            document.getElementById("status").innerText = "Failed to send location ❌";
+          });
+        },
+        () => {
+          document.getElementById("status").innerText = "Permission denied or error.";
+        }
+      );
+    }
+  </script>
+</body>
+</html>
