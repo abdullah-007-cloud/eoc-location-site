@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EOC Operator Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; }
+    input, button { padding: 10px; font-size: 15px; }
+    button { cursor: pointer; }
+    .box { margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h2>EOC Operator Dashboard</h2>
+  <p>Enter the incident token to view the reporter location.</p>
+
+  <input id="token" placeholder="incident123" />
+  <button onclick="loadLocation()">Load Location</button>
+
+  <div class="box" id="output">No data yet.</div>
+
+  <script>
+    const API_BASE = "PUT-YOUR-RENDER-URL-HERE"; // same URL as index.html
+
+    function loadLocation() {
+      const token = document.getElementById("token").value;
+
+      fetch(API_BASE + "/api/location?token=" + token)
+        .then(res => {
+          if (!res.ok) throw new Error();
+          return res.json();
+        })
+        .then(data => {
+          document.getElementById("output").innerHTML = `
+            <b>Latitude:</b> ${data.lat}<br>
+            <b>Longitude:</b> ${data.lng}<br>
+            <b>Accuracy:</b> ${data.accuracy} m<br>
+            <b>Time:</b> ${data.time}<br><br>
+            <a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank">
+              Open in Google Maps
+            </a>
+          `;
+        })
+        .catch(() => {
+          document.getElementById("output").innerText = "Location not found yet.";
+        });
+    }
+  </script>
+</body>
+</html>
