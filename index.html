@@ -1,57 +1,207 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Share Location</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>إرسال الموقع</title>
+
   <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
-    button { padding: 14px 18px; font-size: 16px; cursor: pointer; }
-    .status { margin-top: 15px; font-weight: bold; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .card {
+      max-width: 420px;
+      margin: 40px auto;
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    h2 {
+      margin-top: 0;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 14px;
+      font-weight: bold;
+    }
+
+    input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      margin-top: 6px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 17px;
+      font-weight: bold;
+      background: #0b5cab;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+
+    .note {
+      margin-top: 16px;
+      font-size: 13px;
+      color: #555;
+      line-height: 1.6;
+    }
+
+    .status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 10px;
+      display: none;
+      line-height: 1.6;
+    }
+
+    .success {
+      background: #e8f7ee;
+      color: #146c2e;
+      display: block;
+    }
+
+    .error {
+      background: #fdeaea;
+      color: #9b1c1c;
+      display: block;
+    }
   </style>
 </head>
+
 <body>
-  <h2>Share Your Location</h2>
-  <p>Please tap the button below and allow location access.</p>
+  <div class="card">
+    <h2>إرسال الموقع</h2>
 
-  <button onclick="shareLocation()">Share Location</button>
+    <label for="mobileNumber">رقم الجوال</label>
+    <input id="mobileNumber" type="tel" placeholder="مثال: 05xxxxxxxx" />
 
-  <div class="status" id="status">Waiting...</div>
+    <label for="caseDescription">وصف الحالة</label>
+    <textarea id="caseDescription" rows="4" placeholder="اكتب وصف الحالة"></textarea>
+
+    <button id="sendBtn" onclick="sendLocation()">إرسال الموقع</button>
+
+    <div class="note">
+      بالضغط على "إرسال الموقع"، سيتم طلب صلاحية الموقع وتسجيل رقم الجوال، وصف الحالة، والموقع الحالي.
+    </div>
+
+    <div id="status" class="status"></div>
+  </div>
 
   <script>
-    const API_BASE = "PUT-YOUR-RENDER-URL-HERE"; // example: https://eoc-location-api.onrender.com
-    const TOKEN = "incident123"; // you can change this per incident
+    const API_URL = "PUT_YOUR_WEB_APP_URL_HERE";
 
-    function shareLocation() {
-      if (!navigator.geolocation) {
-        document.getElementById("status").innerText = "Location not supported.";
+    function showStatus(message, type) {
+      const status = document.getElementById("status");
+      status.className = "status " + type;
+      status.innerHTML = message;
+    }
+
+    function sendLocation() {
+      const mobileNumber = document.getElementById("mobileNumber").value.trim();
+      const caseDescription = document.getElementById("caseDescription").value.trim();
+      const sendBtn = document.getElementById("sendBtn");
+
+      if (!mobileNumber) {
+        showStatus("يرجى إدخال رقم الجوال.", "error");
         return;
       }
 
-      document.getElementById("status").innerText = "Requesting location...";
+      if (!caseDescription) {
+        showStatus("يرجى كتابة وصف الحالة.", "error");
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        showStatus("المتصفح لا يدعم تحديد الموقع.", "error");
+        return;
+      }
+
+      sendBtn.disabled = true;
+      sendBtn.innerText = "جاري تحديد الموقع...";
 
       navigator.geolocation.getCurrentPosition(
-        position => {
-          fetch(API_BASE + "/api/location", {
+        function(position) {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          const mapLink = "https://www.google.com/maps?q=" + latitude + "," + longitude;
+
+          sendBtn.innerText = "جاري الإرسال...";
+
+          fetch(API_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            mode: "no-cors",
+            headers: {
+              "Content-Type": "text/plain;charset=utf-8"
+            },
             body: JSON.stringify({
-              token: TOKEN,
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              accuracy: position.coords.accuracy,
-              time: new Date().toISOString()
+              mobileNumber: mobileNumber,
+              caseDescription: caseDescription,
+              latitude: latitude,
+              longitude: longitude
             })
           })
-          .then(() => {
-            document.getElementById("status").innerText = "Location sent successfully ✅";
+          .then(function() {
+            showStatus(
+              "تم إرسال الموقع بنجاح.<br><a href='" + mapLink + "' target='_blank'>فتح الموقع في Google Maps</a>",
+              "success"
+            );
+
+            document.getElementById("caseDescription").value = "";
           })
-          .catch(() => {
-            document.getElementById("status").innerText = "Failed to send location ❌";
+          .catch(function(error) {
+            showStatus("صار خطأ أثناء الإرسال: " + error, "error");
+          })
+          .finally(function() {
+            sendBtn.disabled = false;
+            sendBtn.innerText = "إرسال الموقع";
           });
         },
-        () => {
-          document.getElementById("status").innerText = "Permission denied or error.";
+        function(error) {
+          let message = "لم يتم تحديد الموقع.";
+
+          if (error.code === 1) {
+            message = "تم رفض صلاحية الموقع. فعّل صلاحية الموقع من إعدادات المتصفح.";
+          } else if (error.code === 2) {
+            message = "الموقع غير متاح حاليًا. تأكد من تشغيل GPS.";
+          } else if (error.code === 3) {
+            message = "انتهت مهلة تحديد الموقع. حاول مرة أخرى.";
+          }
+
+          showStatus(message, "error");
+          sendBtn.disabled = false;
+          sendBtn.innerText = "إرسال الموقع";
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
         }
       );
     }
